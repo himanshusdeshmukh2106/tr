@@ -157,12 +157,14 @@ class RelianceDataPreparation:
         print(f"Total features: {len(df.columns)}")
         return df
     
-    def create_target(self, df, horizon=5, threshold=0.005):
+    def create_target(self, df, horizon=5, threshold=0.002):
         """
         Create multi-class target
         0 = Down (< -threshold)
         1 = Neutral (-threshold to +threshold)
         2 = Up (> +threshold)
+        
+        Note: Threshold lowered to 0.002 (0.2%) to get more balanced classes
         """
         df['Future_Return'] = df['Close'].shift(-horizon) / df['Close'] - 1
         
@@ -324,6 +326,21 @@ def train_model(architecture='improved_lstm'):
     print(f"\nTrain: {len(X_train):,} samples")
     print(f"Test: {len(X_test):,} samples")
     
+    # ===== CALCULATE CLASS WEIGHTS (FIX IMBALANCE) =====
+    from sklearn.utils.class_weight import compute_class_weight
+    
+    class_weights = compute_class_weight(
+        'balanced',
+        classes=np.unique(y_train),
+        y=y_train
+    )
+    class_weight_dict = {i: weight for i, weight in enumerate(class_weights)}
+    
+    print(f"\n⚠️  Class weights (to handle imbalance):")
+    for i, weight in class_weight_dict.items():
+        class_name = ['Down', 'Neutral', 'Up'][i]
+        print(f"  Class {i} ({class_name}): {weight:.2f}x penalty")
+    
     # ===== BUILD MODEL =====
     if architecture == 'improved_lstm':
         model = build_improved_lstm(X_train.shape[1:], num_classes=3)
@@ -378,6 +395,7 @@ def train_model(architecture='improved_lstm'):
         epochs=100,
         batch_size=32,
         callbacks=callbacks,
+        class_weight=class_weight_dict,  # Fix class imbalance!
         verbose=1
     )
     
