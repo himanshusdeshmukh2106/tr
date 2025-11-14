@@ -1,0 +1,52 @@
+# Environment
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Data
+data/*.csv
+data/*.npy
+data/*.pkl
+
+# Models
+models/*.h5
+models/*.keras
+models/*.pb
+
+# Logs
+logs/*.log
+logs/*.txt
+
+# Results
+results/*.png
+results/*.csv
+
+# GCP
+lstm-trading-key.json
+*-key.json
+*.json
+!config/*.json
+!package.json
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
