@@ -24,7 +24,17 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Configuration
-DATA_FILE = r"C:\Users\Lenovo\Desktop\tr\reliance_data_5min_full_year.csv"
+# Auto-detect data file location (works on both local and Colab)
+import os
+if os.path.exists("reliance_data_5min_full_year.csv"):
+    DATA_FILE = "reliance_data_5min_full_year.csv"
+elif os.path.exists("../../reliance_data_5min_full_year.csv"):
+    DATA_FILE = "../../reliance_data_5min_full_year.csv"
+elif os.path.exists(r"C:\Users\Lenovo\Desktop\tr\reliance_data_5min_full_year.csv"):
+    DATA_FILE = r"C:\Users\Lenovo\Desktop\tr\reliance_data_5min_full_year.csv"
+else:
+    DATA_FILE = "reliance_data_5min_full_year.csv"  # Default, will error if not found
+
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
 
