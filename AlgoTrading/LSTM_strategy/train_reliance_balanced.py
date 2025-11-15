@@ -105,10 +105,18 @@ class BalancedDataPreparation:
         print(f"Total features: {len(df.columns)}")
         return df
     
-    def create_binary_target(self, df, horizon=5, threshold=0.001):
+    def create_binary_target(self, df, horizon=10, threshold=0.0015):
         """
         Binary classification: 0=Down/Neutral, 1=Up
-        Much easier to learn than 3-class!
+        
+        OPTIMIZED PARAMETERS (v2):
+        - horizon=10 (50 minutes) - easier to predict than 5
+        - threshold=0.0015 (0.15%) - BALANCED (not too high, not too low)
+        
+        Why 0.15%?
+        - 0.1% = too many signals (noisy)
+        - 0.2% = too few signals (can't learn)
+        - 0.15% = just right! (Goldilocks zone)
         """
         df['Future_Return'] = df['Close'].shift(-horizon) / df['Close'] - 1
         df['Target'] = (df['Future_Return'] > threshold).astype(int)
@@ -173,6 +181,11 @@ def train_balanced_model():
     
     # Create sequences
     X, y, features = prep.prepare_sequences(df, sequence_length=30)
+    
+    print(f"\n⚠️  OPTIMIZED PARAMETERS:")
+    print(f"  Horizon: 10 candles (50 minutes) - was 5")
+    print(f"  Threshold: 0.2% - was 0.1%")
+    print(f"  Expected: Better Class 1 accuracy!")
     
     print(f"\nData: X={X.shape}, y={y.shape}")
     print(f"Class distribution BEFORE balancing:")

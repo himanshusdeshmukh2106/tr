@@ -9,7 +9,7 @@ Go to: https://colab.research.google.com/
 ```python
 # In a Colab cell, run:
 !git clone https://github.com/himanshusdeshmukh2106/tr.git
-%cd tr/AlgoTrading/LSTM_strategy
+%cd tr
 ```
 
 ### Step 3: Install Dependencies
@@ -17,23 +17,10 @@ Go to: https://colab.research.google.com/
 !pip install tensorflow pandas numpy scikit-learn ta joblib
 ```
 
-### Step 4: Upload Your Data
+### Step 4: Train Model (CSV already in repo!)
 ```python
-from google.colab import files
-uploaded = files.upload()  # Upload reliance_data_5min_full_year.csv
-```
-
-### Step 5: Update Data Path
-```python
-# Edit the script to use uploaded file
-import os
-DATA_FILE = "reliance_data_5min_full_year.csv"
-```
-
-### Step 6: Train Model
-```python
-# Run training
-!python train_reliance_improved.py --architecture improved_lstm
+# The CSV file is already in the repository, so just run:
+!python AlgoTrading/LSTM_strategy/train_reliance_improved.py --architecture improved_lstm
 ```
 
 ---
@@ -46,39 +33,26 @@ Copy-paste this into a Colab notebook:
 # ===== SETUP =====
 # Clone repository
 !git clone https://github.com/himanshusdeshmukh2106/tr.git
-%cd tr/AlgoTrading/LSTM_strategy
+%cd tr
 
 # Install dependencies
 !pip install -q tensorflow pandas numpy scikit-learn ta joblib
 
-# ===== UPLOAD DATA =====
-from google.colab import files
-print("Upload your reliance_data_5min_full_year.csv file:")
-uploaded = files.upload()
-
-# ===== MODIFY SCRIPT =====
-# Update data path in script
-import fileinput
-for line in fileinput.input('train_reliance_improved.py', inplace=True):
-    if 'DATA_FILE = r"C:\\Users\\Lenovo' in line:
-        print('DATA_FILE = "reliance_data_5min_full_year.csv"')
-    else:
-        print(line, end='')
-
 # ===== TRAIN MODEL =====
-# Option 1: Improved LSTM (Multi-scale)
-!python train_reliance_improved.py --architecture improved_lstm
+# CSV file is already in the repo!
+# Option 1: Improved LSTM (Multi-scale) - RECOMMENDED
+!python AlgoTrading/LSTM_strategy/train_reliance_improved.py --architecture improved_lstm
 
 # Option 2: Transformer-LSTM (More advanced)
-# !python train_reliance_improved.py --architecture transformer_lstm
+# !python AlgoTrading/LSTM_strategy/train_reliance_improved.py --architecture transformer_lstm
 
 # ===== DOWNLOAD RESULTS =====
 # Download trained model
 from google.colab import files
-files.download('models/reliance_improved/improved_lstm_final.h5')
-files.download('models/reliance_improved/improved_lstm_scaler.pkl')
-files.download('models/reliance_improved/improved_lstm_features.pkl')
-files.download('models/reliance_improved/improved_lstm_history.csv')
+files.download('AlgoTrading/LSTM_strategy/models/reliance_improved/improved_lstm_final.h5')
+files.download('AlgoTrading/LSTM_strategy/models/reliance_improved/improved_lstm_scaler.pkl')
+files.download('AlgoTrading/LSTM_strategy/models/reliance_improved/improved_lstm_features.pkl')
+files.download('AlgoTrading/LSTM_strategy/models/reliance_improved/improved_lstm_history.csv')
 ```
 
 ---
@@ -268,26 +242,17 @@ After training:
 Create a new Colab notebook and paste this single cell:
 
 ```python
-# Complete training script
+# Complete one-click training (CSV already in repo!)
 !git clone https://github.com/himanshusdeshmukh2106/tr.git
-%cd tr/AlgoTrading/LSTM_strategy
+%cd tr
 !pip install -q tensorflow pandas numpy scikit-learn ta joblib
 
-# Upload data
+# Train (CSV is already in the repo!)
+!python AlgoTrading/LSTM_strategy/train_reliance_improved.py --architecture improved_lstm
+
+# Download results
 from google.colab import files
-uploaded = files.upload()
-
-# Fix path
-import fileinput
-for line in fileinput.input('train_reliance_improved.py', inplace=True):
-    print(line.replace(r'C:\Users\Lenovo\Desktop\tr\reliance_data_5min_full_year.csv', 
-                       'reliance_data_5min_full_year.csv'), end='')
-
-# Train
-!python train_reliance_improved.py --architecture improved_lstm
-
-# Download
-files.download('models/reliance_improved/improved_lstm_final.h5')
+files.download('AlgoTrading/LSTM_strategy/models/reliance_improved/improved_lstm_final.h5')
 ```
 
 ---
