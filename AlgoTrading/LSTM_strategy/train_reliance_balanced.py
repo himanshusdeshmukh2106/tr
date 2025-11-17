@@ -1,5 +1,8 @@
 """
-FIXED VERSION: Properly handles class imbalance with SMOTE
+AGGRESSIVE BALANCING VERSION: SMOTE + Heavy Class Weights
+- Uses SMOTE to oversample minority class
+- Uses class_weight={0: 1.0, 1: 5.0} to force model to focus on Class 1
+- Goal: Improve Class 1 (Up) accuracy from 38% to 50%+
 """
 
 import numpy as np
@@ -56,53 +59,52 @@ class BalancedDataPreparation:
         return df
     
     def add_features(self, df):
-        """Add technical indicators (simplified for speed)"""
-        print("Adding features...")
+        """MINIMAL features - only what matters for price prediction"""
+        print("Adding MINIMAL features (less is more!)...")
         
-        # Basic
+        # Candle characteristics (most important!)
+        df['Body_Size'] = abs(df['Close'] - df['Open']) / df['Close']  # Candle body size
+        df['Upper_Wick'] = (df['High'] - df[['Open', 'Close']].max(axis=1)) / df['Close']
+        df['Lower_Wick'] = (df[['Open', 'Close']].min(axis=1) - df['Low']) / df['Close']
+        df['Is_Bullish'] = (df['Close'] > df['Open']).astype(int)
+        
+        # Price action
         df['Returns'] = df['Close'].pct_change()
+        df['Returns_2'] = df['Close'].pct_change(2)
+        df['Returns_5'] = df['Close'].pct_change(5)
+        df['High_Low_Ratio'] = (df['High'] - df['Low']) / df['Close']
+        df['Close_Open_Ratio'] = (df['Close'] - df['Open']) / df['Open']
+        
+        # Moving averages (trend)
+        df['SMA_5'] = df['Close'].rolling(5).mean()
+        df['SMA_20'] = df['Close'].rolling(20).mean()
+        df['EMA_21'] = ta.trend.EMAIndicator(df['Close'], window=21).ema_indicator()
+        df['Price_to_SMA5'] = df['Close'] / df['SMA_5']
+        df['Price_to_SMA20'] = df['Close'] / df['SMA_20']
+        df['Price_to_EMA21'] = df['Close'] / df['EMA_21']
+        
+        # Trend strength (ADX)
+        df['ADX'] = ta.trend.ADXIndicator(df['High'], df['Low'], df['Close'], window=14).adx()
+        
+        # Volume (momentum confirmation)
         df['Volume_Change'] = df['Volume'].pct_change()
-        
-        # Moving Averages
-        for period in [5, 10, 20, 50]:
-            df[f'SMA_{period}'] = ta.trend.SMAIndicator(df['Close'], window=period).sma_indicator()
-            df[f'EMA_{period}'] = ta.trend.EMAIndicator(df['Close'], window=period).ema_indicator()
-        
-        # Momentum
-        df['RSI'] = ta.momentum.RSIIndicator(df['Close'], window=14).rsi()
-        df['MFI'] = ta.volume.MFIIndicator(df['High'], df['Low'], df['Close'], df['Volume']).money_flow_index()
-        
-        # Trend
-        macd = ta.trend.MACD(df['Close'])
-        df['MACD'] = macd.macd()
-        df['MACD_Signal'] = macd.macd_signal()
-        df['ADX'] = ta.trend.ADXIndicator(df['High'], df['Low'], df['Close']).adx()
-        
-        # Volatility
-        bb = ta.volatility.BollingerBands(df['Close'])
-        df['BB_Upper'] = bb.bollinger_hband()
-        df['BB_Lower'] = bb.bollinger_lband()
-        df['BB_Width'] = (df['BB_Upper'] - df['BB_Lower']) / df['Close']
-        df['ATR'] = ta.volatility.AverageTrueRange(df['High'], df['Low'], df['Close']).average_true_range()
-        
-        # Volume
-        df['OBV'] = ta.volume.OnBalanceVolumeIndicator(df['Close'], df['Volume']).on_balance_volume()
         df['Volume_MA'] = df['Volume'].rolling(20).mean()
         df['Volume_Ratio'] = df['Volume'] / (df['Volume_MA'] + 1e-10)
         
-        # Price levels
+        # Price levels (support/resistance)
         df['High_20'] = df['High'].rolling(20).max()
         df['Low_20'] = df['Low'].rolling(20).min()
         df['Distance_High'] = (df['High_20'] - df['Close']) / df['Close']
         df['Distance_Low'] = (df['Close'] - df['Low_20']) / df['Close']
         
-        # Time features
+        # Time of day (intraday patterns)
         df['Hour'] = df.index.hour
-        df['Minute'] = df.index.minute
         df['Hour_Sin'] = np.sin(2 * np.pi * df['Hour'] / 24)
         df['Hour_Cos'] = np.cos(2 * np.pi * df['Hour'] / 24)
         
-        print(f"Total features: {len(df.columns)}")
+        print(f"✓ Using {len([c for c in df.columns if c not in ['Open', 'High', 'Low', 'Close', 'Volume']])} features")
+        print("  Added: Candle body/wicks, EMA 21, ADX")
+        print("  Keeping: Price action, MAs, volume, time")
         return df
     
     def create_binary_target(self, df, horizon=10, threshold=0.0015):
@@ -182,10 +184,12 @@ def train_balanced_model():
     # Create sequences
     X, y, features = prep.prepare_sequences(df, sequence_length=30)
     
-    print(f"\n⚠️  OPTIMIZED PARAMETERS:")
-    print(f"  Horizon: 10 candles (50 minutes) - was 5")
-    print(f"  Threshold: 0.2% - was 0.1%")
-    print(f"  Expected: Better Class 1 accuracy!")
+    print(f"\n⚠️  AGGRESSIVE BALANCING STRATEGY:")
+    print(f"  1. SMOTE: Oversample Class 1 to match Class 0")
+    print(f"  2. Class Weights: {0: 1.0, 1: 5.0} - 5x penalty for Class 1 errors")
+    print(f"  3. Goal: Class 1 accuracy > 50% (currently 38%)")
+    print(f"\n  Horizon: 5 candles (25 minutes)")
+    print(f"  Threshold: 0.1%")
     
     print(f"\nData: X={X.shape}, y={y.shape}")
     print(f"Class distribution BEFORE balancing:")
@@ -216,6 +220,11 @@ def train_balanced_model():
         metrics=['accuracy']
     )
     
+    # AGGRESSIVE class weights - force model to focus on Class 1
+    class_weight = {0: 1.0, 1: 5.0}
+    print(f"\n⚡ Using AGGRESSIVE class weights: {class_weight}")
+    print(f"  This will force the model to focus 5x more on Class 1 (Up) predictions!")
+    
     print(f"\n{'='*80}")
     print("Model Architecture")
     print(f"{'='*80}")
@@ -239,6 +248,7 @@ def train_balanced_model():
         epochs=50,
         batch_size=64,
         callbacks=callbacks,
+        class_weight=class_weight,  # Apply aggressive class weights
         verbose=1
     )
     
