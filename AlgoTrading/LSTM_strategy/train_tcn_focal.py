@@ -165,8 +165,22 @@ class DataPrep:
         df['datetime'] = pd.to_datetime(df['datetime'])
         df.set_index('datetime', inplace=True)
         df.columns = ['Open', 'High', 'Low', 'Close', 'Volume']
-        print(f"Loaded {len(df)} rows")
-        return df
+        print(f"Loaded {len(df)} rows (5-minute data)")
+        
+        # Convert to 15-minute candles
+        print("Converting to 15-minute timeframe...")
+        df_15min = df.resample('15T').agg({
+            'Open': 'first',
+            'High': 'max',
+            'Low': 'min',
+            'Close': 'last',
+            'Volume': 'sum'
+        }).dropna()
+        
+        print(f"After resampling: {len(df_15min)} rows (15-minute data)")
+        print(f"Noise reduction: {len(df) / len(df_15min):.1f}x fewer candles")
+        
+        return df_15min
     
     def add_features(self, df):
         print("Adding features...")
@@ -213,15 +227,23 @@ class DataPrep:
         
         return df
     
-    def create_target(self, df, horizon=5, threshold=0.002):
-        """Create 3-class target"""
+    def create_target(self, df, horizon=3, threshold=0.003):
+        """
+        Create 3-class target for 15-minute data
+        horizon=3 means 45 minutes ahead (3 x 15min candles)
+        threshold=0.003 means 0.3% move
+        """
         df['Future_Return'] = df['Close'].shift(-horizon) / df['Close'] - 1
         df['Target'] = 1  # Neutral
         df.loc[df['Future_Return'] < -threshold, 'Target'] = 0  # Down
         df.loc[df['Future_Return'] > threshold, 'Target'] = 2   # Up
         return df
     
-    def prepare_sequences(self, df, sequence_length=30):
+    def prepare_sequences(self, df, sequence_length=20):
+        """
+        sequence_length=20 for 15-min data = 5 hours of history
+        (same as 30 candles of 5-min data = 2.5 hours, but with less noise)
+        """
         feature_columns = df.select_dtypes(include=[np.number]).columns.tolist()
         feature_columns = [col for col in feature_columns if col not in ['Target', 'Future_Return']]
         
@@ -253,23 +275,28 @@ class DataPrep:
 
 def train_tcn_focal():
     print("="*80)
-    print("TCN WITH FOCAL LOSS - RESEARCH-BACKED APPROACH")
+    print("TCN WITH FOCAL LOSS - 15-MINUTE TIMEFRAME")
     print("="*80)
     print("\n🔬 Key Improvements:")
-    print("  1. TCN: Faster convergence, better long-term dependencies")
-    print("  2. Focal Loss: Focuses on hard-to-classify examples")
-    print("  3. Dilated convolutions: Captures patterns at multiple scales")
-    print("  4. Residual connections: Better gradient flow")
+    print("  1. 15-minute candles: 3x less noise than 5-minute")
+    print("  2. TCN: Faster convergence, better long-term dependencies")
+    print("  3. Focal Loss: Focuses on hard-to-classify examples")
+    print("  4. Dilated convolutions: Captures patterns at multiple scales")
+    print("  5. Residual connections: Better gradient flow")
+    print("\n📊 Prediction Target:")
+    print("  Horizon: 3 candles (45 minutes)")
+    print("  Threshold: 0.3% move")
+    print("  Lookback: 20 candles (5 hours)")
     print()
     
     # Load data
     prep = DataPrep()
-    df = prep.load_data(DATA_FILE)
+    df = prep.load_data(DATA_FILE)  # Automatically converts to 15-min
     df = prep.add_features(df)
-    df = prep.create_target(df, horizon=5, threshold=0.002)
+    df = prep.create_target(df, horizon=3, threshold=0.003)  # 45 min, 0.3%
     
     # Create sequences
-    X, y = prep.prepare_sequences(df, sequence_length=30)
+    X, y = prep.prepare_sequences(df, sequence_length=20)  # 5 hours lookback
     
     print(f"\nData: X={X.shape}, y={y.shape}")
     print(f"\nClass distribution:")
@@ -406,10 +433,15 @@ def train_tcn_focal():
     print("\n" + "="*80)
     print("TRAINING COMPLETE! 🎉")
     print("="*80)
-    print("\n💡 TCN + Focal Loss should provide:")
-    print("  - Better UP/DOWN accuracy (focuses on hard examples)")
-    print("  - Faster training than LSTM")
-    print("  - More trading signals (less NEUTRAL bias)")
+    print("\n💡 15-min TCN + Focal Loss should provide:")
+    print("  - Better UP/DOWN accuracy (less noise, clearer patterns)")
+    print("  - More reliable signals (3x noise reduction)")
+    print("  - Still intraday (25 candles per day)")
+    print("  - Focuses on hard examples (Focal Loss)")
+    print("\n📈 Expected improvement:")
+    print("  - UP/DOWN accuracy should be >50% (vs 0-20% on 5-min)")
+    print("  - More balanced predictions (not just NEUTRAL)")
+    print("  - Tradeable signals with good risk/reward")
     
     return model, history, prep
 
