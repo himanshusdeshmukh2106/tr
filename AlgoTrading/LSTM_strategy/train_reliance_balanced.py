@@ -184,10 +184,10 @@ def train_balanced_model():
     # Create sequences
     X, y, features = prep.prepare_sequences(df, sequence_length=30)
     
-    print(f"\n⚠️  AGGRESSIVE BALANCING STRATEGY:")
+    print(f"\n⚠️  BALANCED STRATEGY (v2 - reduced from 5x to 2.5x):")
     print(f"  1. SMOTE: Oversample Class 1 to match Class 0")
-    print("  2. Class Weights: {0: 1.0, 1: 5.0} - 5x penalty for Class 1 errors")
-    print(f"  3. Goal: Class 1 accuracy > 50% (currently 38%)")
+    print("  2. Class Weights: {0: 1.0, 1: 2.5} - moderate penalty")
+    print(f"  3. Goal: Balanced accuracy for both classes")
     print(f"\n  Horizon: 5 candles (25 minutes)")
     print(f"  Threshold: 0.1%")
     
@@ -220,10 +220,10 @@ def train_balanced_model():
         metrics=['accuracy']
     )
     
-    # AGGRESSIVE class weights - force model to focus on Class 1
-    class_weight = {0: 1.0, 1: 5.0}
-    print(f"\n⚡ Using AGGRESSIVE class weights: {class_weight}")
-    print(f"  This will force the model to focus 5x more on Class 1 (Up) predictions!")
+    # BALANCED class weights - moderate focus on Class 1
+    class_weight = {0: 1.0, 1: 2.5}  # Reduced from 5.0 to 2.5
+    print(f"\n⚡ Using BALANCED class weights: {class_weight}")
+    print(f"  This will give 2.5x more focus to Class 1 (Up) predictions")
     
     print(f"\n{'='*80}")
     print("Model Architecture")
