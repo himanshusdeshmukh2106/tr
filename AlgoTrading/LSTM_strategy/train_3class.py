@@ -97,12 +97,14 @@ class ThreeClassDataPrep:
         
         return df
     
-    def create_3class_target(self, df, horizon=5, threshold=0.0015):
+    def create_3class_target(self, df, horizon=5, threshold=0.003):
         """
         Create 3-class target:
         0 = DOWN (< -threshold)
         1 = NEUTRAL (-threshold to +threshold)
         2 = UP (> +threshold)
+        
+        threshold=0.003 (0.3%) - bigger moves, easier to predict
         """
         df['Future_Return'] = df['Close'].shift(-horizon) / df['Close'] - 1
         
@@ -162,17 +164,17 @@ def train_3class_model():
     print("="*80)
     print("3-CLASS MODEL TRAINING")
     print("="*80)
-    print("\n📊 Classes:")
-    print("  Class 0: DOWN (< -0.15%) - SHORT these")
-    print("  Class 1: NEUTRAL (-0.15% to +0.15%) - STAY OUT")
-    print("  Class 2: UP (> +0.15%) - LONG these")
+    print("\n📊 Classes (0.3% threshold - bigger moves):")
+    print("  Class 0: DOWN (< -0.3%) - SHORT these")
+    print("  Class 1: NEUTRAL (-0.3% to +0.3%) - STAY OUT")
+    print("  Class 2: UP (> +0.3%) - LONG these")
     print()
     
     # Load data
     prep = ThreeClassDataPrep()
     df = prep.load_data(DATA_FILE)
     df = prep.add_features(df)
-    df = prep.create_3class_target(df, horizon=5, threshold=0.0015)
+    df = prep.create_3class_target(df, horizon=5, threshold=0.003)
     
     # Create sequences
     X, y, features = prep.prepare_sequences(df, sequence_length=30)
