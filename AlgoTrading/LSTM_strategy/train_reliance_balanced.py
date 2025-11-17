@@ -186,7 +186,7 @@ def train_balanced_model():
     
     print(f"\n⚠️  AGGRESSIVE BALANCING STRATEGY:")
     print(f"  1. SMOTE: Oversample Class 1 to match Class 0")
-    print(f"  2. Class Weights: {0: 1.0, 1: 5.0} - 5x penalty for Class 1 errors")
+    print("  2. Class Weights: {0: 1.0, 1: 5.0} - 5x penalty for Class 1 errors")
     print(f"  3. Goal: Class 1 accuracy > 50% (currently 38%)")
     print(f"\n  Horizon: 5 candles (25 minutes)")
     print(f"  Threshold: 0.1%")
